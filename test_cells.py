@@ -226,3 +226,37 @@
 # fig, axes = plt.subplots(len(row_images_original), 1, figsize=(15, 3))
 # for i in range(len(row_images_original)):
 #     axes[i].imshow(row_images_original[i])
+
+
+
+
+
+
+
+
+################################## TEST CELL 3 ################################
+
+
+
+import cv2 as cv
+# test_img = (skeletonize(1 - symbols[1][13])*255).astype('uint8')
+
+# out = test_img.copy()
+test_img = (skeletonize((1 - symbols[0][4]))*255).astype('uint8')
+
+coords = corner_peaks(corner_harris(test_img), min_distance=2, threshold_rel=0.02)
+coords_subpix = corner_subpix(test_img, coords, window_size=13)
+
+fig, ax = plt.subplots()
+ax.imshow(test_img, cmap=plt.cm.gray)
+ax.plot(coords[:, 1], coords[:, 0], color='cyan', marker='o',
+        linestyle='None', markersize=6)
+ax.plot(coords_subpix[:, 1], coords_subpix[:, 0], '+r', markersize=15)
+ax.axis((0, 310, 200, 0))
+plt.show()
+
+
+# sift = cv.SIFT_create(contrastThreshold=0.09, edgeThreshold=3, sigma=1.6)
+# kp, des = sift.detectAndCompute(test_img,None)
+# test_img=cv.drawKeypoints(test_img,kp,out)
+show_images([test_img])

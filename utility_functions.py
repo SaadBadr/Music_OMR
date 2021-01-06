@@ -146,7 +146,7 @@ def get_avg_line_spacing(linesArr):
 
 	return mean_diff/(len(linesArr)-1)
 
-def remove_staff_lines(img, linesArr):
+def remove_staff_lines(img):
 	no_staff_image = img.copy()
 
 	## I tried all the following approaches but i failed to remove staff lines in the non high quality images.
@@ -173,8 +173,33 @@ def remove_staff_lines(img, linesArr):
 	# no_staff_image[:, np.where(vertical_histogram <= maxFrequentVal)] = 0
 	# plt.figure()
 	# bar(range(0, img.shape[1]), vertical_histogram, width=0.8, align='center')
+	img = img.copy()
+	Sum = (np.sum(img, axis = 1)).astype(int)
+	maximum = np.max(Sum)
+	hist = np.zeros(img.shape)
+	for i in range(0, len(Sum)):
+		hist[i, :Sum[i]] = 1
+		if Sum[i] >= (maximum - (img.shape[0]//5)):
+			img[i] = 0
+	kernel_errosion = np.array([
+	[0, 1, 0],
+	[0, 1, 0],
+	[0, 1, 0]
+	], 
+	dtype=np.uint8)
+	kernel_close = np.array([
+	[0, 0, 1, 0, 0],
+	[0, 0, 1, 0, 0],
+	[0, 0, 1, 0, 0],
+	[0, 0, 1, 0, 0],
+	[0, 0, 1, 0, 0]
+	], 
+	dtype=np.uint8)
+   
+	img = binary_erosion(img, selem=kernel_errosion)
+	img = binary_closing(img, selem = kernel_close)
 
-	return no_staff_image
+	return img
 
 def draw_staff_lines(img, linesArr):
 	for points in linesArr.astype(int): #looping through the extracted lines
@@ -515,28 +540,42 @@ def segment_image_into_rows(binary_image, original_image):
 
 
 
-
 def segment_symbols(binary_img, original_img):
 	# Draw vertical lines in places where no symbols exist (vertical histogram value is low)
 	binary_img, original_img = truncate_left_and_right_empty_spaces(binary_img, original_img)
 	binary_img, original_img = remove_right_side_bold_barline(binary_img, original_img)
 	binary_img, original_img = remove_left_side_brace(binary_img, original_img)
 	avg_spacing = int(get_avg_line_spacing(reduce_lines_to_5(detect_lines(binary_img))))
-
-
-	f = np.array([
+	# binary_img = remove_staff_lines(binary_img)
+	# show_images([binary_img])
+	f1 = np.array([
+		[0,1,0],
+		[0,1,0],
+		[0,1,0]
+	])
+	f2 = np.array([
 		[0,0,0],
 		[1,1,1],
 		[0,0,0]
 	])
+	# binary_img = binary_closing(binary_img)
 	# # show_images([thin(binary_img, 2)])
+	# number_of_itrs = 10
+	# for i in range(number_of_itrs):
+	# 	binary_img = binary_dilation(binary_img, f1)
+	# binary_img = binary_dilation(binary_img, f2)
+	
+	# show_images([binary_img])
+	# for i in range(number_of_itrs):
+	# 	binary_img = binary_erosion(binary_img, selem=f1)
 
-	binary_img = binary_erosion(binary_img, selem=f)
+
+
+	binary_img = binary_erosion(binary_img, selem=f1)
+	# show_images([binary_img])
 
 	# binary_img = thin(binary_img, 4)
-
 	# binary_img = skeletonize(binary_img)
-
 	# show_images([skeletonize(binary_img)])
 
 
