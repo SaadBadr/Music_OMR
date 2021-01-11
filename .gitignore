@@ -131,3 +131,9 @@ dmypy.json
 #Custom directories
 /test-set-camera-captured
 /test-set-scanned
+model_pickle1
+abc/
+*.png
+*.jpg
+*.jpeg
+*.txt

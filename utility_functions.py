@@ -16,6 +16,7 @@ from skimage.draw import line,disk
 from skimage.feature import match_template, canny
 from scipy.signal import convolve2d
 from commonfunctions import *
+from scipy.ndimage.morphology import binary_fill_holes
 
 
 
@@ -48,14 +49,14 @@ def adjust_orientation(img):
 
 	rotated_image = img
 	# if abs(180 - abs(mean_angle)) > 20:
-	# rotated_image = np.round(transform.rotate(img, rotation_angle, resize=False, clip=False, cval=0)).astype(int)
-	rotated_image = transform.rotate(rotated_image, rotation_angle, resize=False, clip=False, cval=0, preserve_range=True)
+	# rotated_image = np.round(transform.rotate(img, rotation_angle, resize=True, clip=False, cval=0)).astype(int)
+	rotated_image = transform.rotate(rotated_image, rotation_angle, resize=True, clip=False, cval=0, preserve_range=True)
 	return rotated_image, rotation_angle
 
 def line_sort_key(line):
 	return line[0][1] # return y0
 
-# Returns an array of the detected horizontal lines in an input image (sorted by the y component of the first point in each line)
+# Returns an array of the detected "horizontal" lines in an input image (sorted by the y component of the first point in each line)
 # [ [[x0,y0], [x1, y1]], [[x2, y2], [x3, y3]], ... ] --> Array of lines --> each line is an array of 2 points --> each point is an array of x and y
 def detect_lines(img):
 
@@ -69,15 +70,15 @@ def detect_lines(img):
 	# axes.imshow(skeletonized_image, cmap=cm.gray)
 
 	origin = np.array((0, skeletonized_image.shape[1]-1))
-	peaks = zip(*hough_line_peaks(h, theta, d, min_distance=1))
+	peaks = zip(*hough_line_peaks(h, theta, d, threshold=0.25*np.max(h)))
 
 	linesArr = []
 	for _, angle, dist in peaks:
-			if abs(90 - abs(np.rad2deg(angle)) > 3):
+			if abs(90 - abs(np.rad2deg(angle)) > 3): # if angle is not close to 90/-90 degress neglect it (we detect horizontal lines only)
 					continue
-			if(abs(np.rad2deg(angle)) > 0.5):
+			if(abs(np.rad2deg(angle)) > 0.5): #if angle not equal zero
 					y0, y1 = (dist - origin * np.cos(angle)) / np.sin(angle)
-			else:
+			else: #if angle zero
 					y0 = 0
 					y1 = skeletonized_image.shape[0] - 1
 					origin[0] = dist
@@ -146,7 +147,7 @@ def get_avg_line_spacing(linesArr):
 
 	return mean_diff/(len(linesArr)-1)
 
-def remove_staff_lines(img):
+def remove_staff_lines(img, avg_spacing):
 	no_staff_image = img.copy()
 
 	## I tried all the following approaches but i failed to remove staff lines in the non high quality images.
@@ -160,46 +161,52 @@ def remove_staff_lines(img):
 	# no_staff_image = sobel_v(no_staff_image)
 	# thresh = threshold_li(no_staff_image)
 	# no_staff_image= no_staff_image < thresh
+	# return no_staff_image
 
 	## Approach 3
-	# vertical_histogram = np.sum(no_staff_image,axis=0)
-	# unique, counts = np.unique(vertical_histogram, return_counts=True)
-	# indexOfMaxFrequentVal = np.argmax(counts)
-	# maxFrequentVal = int(unique[indexOfMaxFrequentVal])
-	# while(maxFrequentVal <= 5):
-	#     counts = np.delete(counts, indexOfMaxFrequentVal)
-	#     unique = np.delete(unique, indexOfMaxFrequentVal)
-	#     maxFrequentVal = int(unique[np.argmax(counts)])
-	# no_staff_image[:, np.where(vertical_histogram <= maxFrequentVal)] = 0
+	vertical_histogram = np.sum(no_staff_image,axis=0)
+	unique, counts = np.unique(vertical_histogram, return_counts=True)
+	indexOfMaxFrequentVal = np.argmax(counts)
+	maxFrequentVal = int(unique[indexOfMaxFrequentVal])
+	while(maxFrequentVal <= 5):
+	    counts = np.delete(counts, indexOfMaxFrequentVal)
+	    unique = np.delete(unique, indexOfMaxFrequentVal)
+	    maxFrequentVal = int(unique[np.argmax(counts)])
+	no_staff_image[:, np.where(vertical_histogram <= maxFrequentVal+0.2*avg_spacing)] = 0
 	# plt.figure()
 	# bar(range(0, img.shape[1]), vertical_histogram, width=0.8, align='center')
-	img = img.copy()
-	Sum = (np.sum(img, axis = 1)).astype(int)
-	maximum = np.max(Sum)
-	hist = np.zeros(img.shape)
-	for i in range(0, len(Sum)):
-		hist[i, :Sum[i]] = 1
-		if Sum[i] >= (maximum - (img.shape[0]//5)):
-			img[i] = 0
-	kernel_errosion = np.array([
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0]
-	], 
-	dtype=np.uint8)
-	kernel_close = np.array([
-	[0, 0, 1, 0, 0],
-	[0, 0, 1, 0, 0],
-	[0, 0, 1, 0, 0],
-	[0, 0, 1, 0, 0],
-	[0, 0, 1, 0, 0]
-	], 
-	dtype=np.uint8)
-   
-	img = binary_erosion(img, selem=kernel_errosion)
-	img = binary_closing(img, selem = kernel_close)
+	return no_staff_image
+	
 
-	return img
+	## Approach 4
+	# img = img.copy()
+	# Sum = (np.sum(img, axis = 1)).astype(int)
+	# maximum = np.max(Sum)
+	# hist = np.zeros(img.shape)
+	# staff_lines = []
+	# for i in range(0, len(Sum)):
+	# 	# hist[i, :Sum[i]] = 1
+	# 	if Sum[i] >= (maximum - (img.shape[0]//5)):
+	# 		staff_lines.append(i)
+	# 		img[i] = 0
+
+	# kernel_errosion = np.array([
+	# [0, 1, 0],
+	# [0, 1, 0],
+	# [0, 1, 0]
+	# ], 
+	# dtype=np.uint8)
+	# kernel_close = np.array([
+	# [0, 0, 1, 0, 0],
+	# [0, 0, 1, 0, 0],
+	# [0, 0, 1, 0, 0],
+	# [0, 0, 1, 0, 0],
+	# [0, 0, 1, 0, 0]
+	# ], 
+	# dtype=np.uint8)
+	# img = binary_erosion(img, selem=kernel_errosion)
+	# img = binary_closing(img, selem = kernel_close)
+	# return img
 
 def draw_staff_lines(img, linesArr):
 	for points in linesArr.astype(int): #looping through the extracted lines
@@ -217,45 +224,61 @@ def get_vertical_lines(img, thresh=10):
 
 # Diameter must be odd number
 # Returns the centers of the circles of a given diameter
-def get_circles(img, diameter): 
-	selem = np.zeros((diameter, diameter), dtype=np.uint8)
-	rr, cc = disk((diameter//2, diameter//2), diameter//2+1)
+def get_circles(img, diameter, thresh): 
+	selem = np.ones((diameter+1, diameter+1), dtype=np.uint8)
+	rr, cc = disk((diameter//2, diameter//2), diameter//2)
 	selem[rr,cc] = 1
-	result = convolve2d(np.uint8(img), selem) + convolve2d(np.uint8(1-img), 1-selem)
+	img_cpy = img.copy()
+	selem = np.array([
+		[1,1,1],
+		[1,1,1],
+		[1,1,1]
+	])
+	img_cpy = binary_erosion(img_cpy, selem=selem)
+	img_cpy = binary_erosion(img_cpy, selem=selem)
+	img_cpy = binary_erosion(img_cpy, selem=selem)
+	img_cpy = binary_erosion(img_cpy, selem=selem)
+
+
+
+
+	result = convolve2d(np.uint8(img_cpy), selem, mode='same')  + convolve2d(np.uint8(1-img_cpy), 1-selem, mode='same')
+	# print(np.max(result), (selem.shape[0] * selem.shape[1]), diameter)
+	# result = result / (selem.shape[0] * selem.shape[1])
 	result = result / np.max(result)
 
-	ij = np.where(result > 0.9)
+	ij = np.where(result >= thresh)
 	x, y = ij[::-1]
+	# circlesArrX = x
+	# circlesArrY = y
 
 	# Combine very close circles to one circle
 	circlesArrX = []
 	circlesArrY = []
 	used = np.zeros(len(x), dtype=np.uint8)
 	for i in range(len(x)):
-			if(used[i] == 1):
-					continue
-			used[i] = 1
-			accumulator = []
-			accumulator.append(i)
-			for j in range(len(x)):
-					if(used[j] == 1):
-							continue
-					if abs(x[i] - x[j]) <= diameter and abs(y[i] - y[j]) <= diameter:
-							used[j] = 1
-							accumulator.append(j)
-			centerX = 0
-			centerY = 0
-			for k in accumulator:
-					centerX += x[k]
-					centerY += y[k]
-			centerX /= len(accumulator)
-			centerY /= len(accumulator)
-			circlesArrX.append(centerX)
-			circlesArrY.append(centerY)
-	circlesArrX = np.array(circlesArrX)
-	circlesArrY = np.array(circlesArrY)
+		if(used[i] == 1):
+			continue
+		used[i] = 1
+		accumulator = []
+		accumulator.append(i)
+		for j in range(len(x)):
+			if(used[j] == 1):
+				continue
+			if abs(x[i] - x[j]) <= diameter and abs(y[i] - y[j]) <= diameter:
+				used[j] = 1
+				accumulator.append(j)
+		centerX = 0
+		centerY = 0
+		for k in accumulator:
+			centerX += x[k]
+			centerY += y[k]
+		centerX /= len(accumulator)
+		centerY /= len(accumulator)
+		circlesArrX.append(centerX)
+		circlesArrY.append(centerY)
 
-	return circlesArrX, circlesArrY 
+	return np.array(circlesArrX), np.array(circlesArrY)
 
 ## Returns 1D array that corresponds to the vertical projection of a binary image
 def get_vertical_histogram(img):
@@ -472,7 +495,7 @@ def segment_image_into_rows(binary_image, original_image):
 	# if the number of lines detected is less than or equal to 5 then the 
 	# img contains only one stave/row.
 	if(len(linesArr) <= 5):
-		return [binary_image], [original_image]
+		return [binary_image], [original_image], [0, binary_image.shape[0]-1]
 
 
 	## Getting the average y values for each line as a preparation step 
@@ -523,7 +546,7 @@ def segment_image_into_rows(binary_image, original_image):
 	first_seg_loc = seg_locs[0] - max_diff
 	first_seg_loc = first_seg_loc if first_seg_loc >= 0 else 0
 	last_seg_loc = seg_locs[-1] + max_diff
-	last_seg_loc = last_seg_loc if last_seg_loc >= binary_image.shape[0]-1 else binary_image.shape[0]-1
+	last_seg_loc = last_seg_loc if last_seg_loc < binary_image.shape[0]-1 else binary_image.shape[0]-1
 	seg_locs.insert(0, first_seg_loc)
 	seg_locs.append(last_seg_loc)
 
@@ -536,49 +559,49 @@ def segment_image_into_rows(binary_image, original_image):
 		row = original_image[start_loc:end_loc, :]
 		row_images_original.append(row)
 
-	return np.array(row_images), np.array(row_images_original)
+	return np.array(row_images), np.array(row_images_original), seg_locs
 
 
 
-def segment_symbols(binary_img, original_img):
+def segment_symbols(binary_img, original_img, is_first_half):
 	# Draw vertical lines in places where no symbols exist (vertical histogram value is low)
 	binary_img, original_img = truncate_left_and_right_empty_spaces(binary_img, original_img)
-	binary_img, original_img = remove_right_side_bold_barline(binary_img, original_img)
-	binary_img, original_img = remove_left_side_brace(binary_img, original_img)
-	avg_spacing = int(get_avg_line_spacing(reduce_lines_to_5(detect_lines(binary_img))))
-	# binary_img = remove_staff_lines(binary_img)
-	# show_images([binary_img])
+	if(not is_first_half):
+		binary_img, original_img = remove_right_side_bold_barline(binary_img, original_img)
+	if(is_first_half):
+		binary_img, original_img = remove_left_side_brace(binary_img, original_img)
+	
+	linesArr = reduce_lines_to_5(detect_lines(binary_img))
+	avg_spacing = int(get_avg_line_spacing(linesArr))
+
 	f1 = np.array([
-		[0,1,0],
-		[0,1,0],
-		[0,1,0]
+	[0,1,0],
+	[0,1,0],
+	[0,1,0]
 	])
 	f2 = np.array([
-		[0,0,0],
-		[1,1,1],
-		[0,0,0]
+	[0,0,0],
+	[1,1,0],
+	[0,0,0]
 	])
-	# binary_img = binary_closing(binary_img)
-	# # show_images([thin(binary_img, 2)])
-	# number_of_itrs = 10
-	# for i in range(number_of_itrs):
-	# 	binary_img = binary_dilation(binary_img, f1)
-	# binary_img = binary_dilation(binary_img, f2)
-	
-	# show_images([binary_img])
-	# for i in range(number_of_itrs):
-	# 	binary_img = binary_erosion(binary_img, selem=f1)
 
+	binary_img = remove_staff_lines(binary_img, avg_spacing)
+	binary_img = binary_dilation(binary_img, selem=f2)
 
-
-	binary_img = binary_erosion(binary_img, selem=f1)
 	# show_images([binary_img])
 
-	# binary_img = thin(binary_img, 4)
-	# binary_img = skeletonize(binary_img)
-	# show_images([skeletonize(binary_img)])
+
+	number_of_itrs = 1
+	for i in range(number_of_itrs):
+		binary_img = binary_opening(binary_img, selem=f1)
+
+	binary_img = binary_opening(binary_img, selem=f2)
 
 
+	# show_images([binary_img])
+
+
+	############# SEGMENTATION ############
 	vertical_histogram = get_vertical_histogram(binary_img)
 	thresh = get_most_repeated_pixel_count_in_columns(binary_img)
 	v_lines = np.where(vertical_histogram <= thresh)[0]
@@ -595,11 +618,42 @@ def segment_symbols(binary_img, original_img):
 
 	symbols_locs = np.array(symbols_locs)
 	symbols= []
+	symbols_no_staff_lines= []
+
 	for symbol_loc in symbols_locs:
 		symbols.append(original_img[:, symbol_loc[0]:symbol_loc[1]])	
-	return symbols
+		symbol_no_staff_lines = binary_img[:, symbol_loc[0]:symbol_loc[1]]
+		symbol_no_staff_lines = binary_erosion(symbol_no_staff_lines, selem=f1)
+		symbol_no_staff_lines = binary_erosion(symbol_no_staff_lines, selem=f1)
+		symbol_no_staff_lines = binary_erosion(symbol_no_staff_lines, selem=f1)
+
+		symbol_no_staff_lines = binary_dilation(symbol_no_staff_lines, selem=f1)
+		symbol_no_staff_lines = binary_dilation(symbol_no_staff_lines, selem=f1)
+		symbol_no_staff_lines = binary_dilation(symbol_no_staff_lines, selem=f1)
+
+		symbols_no_staff_lines.append(symbol_no_staff_lines)
+
+	return symbols, symbols_no_staff_lines, linesArr
 
 
+def check_if_beam_is_on_top(symbol):
+	topCount = 0
+	bottomCount = 0
+	for col in range(symbol.shape[1]):
+		row = 0
+		while(row < symbol.shape[0]//2):
+			if(symbol[row, col] == 1):
+				topCount+=1
+				break
+			row+=1
+
+		row = symbol.shape[0]-1
+		while(row > symbol.shape[0]//2):
+			if(symbol[row, col] == 1):
+				bottomCount+=1
+				break
+			row-=1
+	return topCount > bottomCount
 ##----------------------------------------------------------------------------------------------------------------------------------------------
 
 ## For Classification
@@ -610,11 +664,94 @@ def classify_symbol(symbol):
 	return "<Symbol X>"
 
 
-def calc_symbol_position(symbol):
-	# TODO
-	return "2"
+def calc_symbol_position(symbol, label, lines):
+	if(not (label in ["a_1", "a_2", "a_4", "a_8", "a_16", "a_32", "b_8", "b_16", "b_32", "chord"])):
+		return {"label": label, "centers": []}
+
+	if(label in ["a_1", "a_2"]):
+		f = np.array([
+    [0,0,0],
+    [1,1,1],
+    [0,0,0],
+		])
+		symbol_cpy = symbol.copy()
+		itr = 7
+		for i in range(itr):
+			symbol_cpy = binary_dilation(symbol_cpy, selem=f)
+		symbol_cpy = binary_fill_holes(symbol_cpy)
+		itr = 9
+		for i in range(itr):
+			symbol_cpy = binary_erosion(symbol_cpy, selem=f)
+
+		diameter = int(get_avg_line_spacing(lines))
+		x, y = get_circles(symbol_cpy, diameter, 1)
+		min_distance_to_center = float('inf')
+		for i, X in enumerate(x):
+			if(abs(X-symbol_cpy.shape[1]//2) < min_distance_to_center):
+				center_x = X
+				center_y = y[i]
+				min_distance_to_center = abs(X-symbol_cpy.shape[1]//2)
+		return {"label": label, "centers": [center_y]}
 
 
-def get_note(symbol_label, symbol_position):
-	# TODO
-	return "<NOTE>"
+	diameter = int(get_avg_line_spacing(lines))
+	x, y = get_circles(symbol, diameter, 1)
+
+	crotchets_positions = np.array(y)
+
+	if(label in ["b_8", "b_16", "b_32"]):
+
+		# b = check_if_beam_is_on_top(symbol)
+		# newX = []
+		# newY = []
+		# if(b): #beam is on top
+		# 		for i,Y in enumerate(y):
+		# 				if(Y >= symbol_cpy.shape[0]//2):
+		# 						newX.append(x[i])
+		# 						newY.append(Y)
+		# else: #beam is at bottom
+		# 		for i,Y in enumerate(y):
+		# 				if(Y <= symbol_cpy.shape[0]//2):
+		# 						newX.append(x[i])
+		# 						newY.append(Y)
+		# newX = np.array(newX)
+		# newY = np.array(newY)
+		# crotchets_positions = newY.copy()
+
+		if(check_if_beam_is_on_top(symbol)):
+			crotchets_positions =  crotchets_positions[np.where(crotchets_positions >= symbol.shape[0]//2)]
+		else:
+			crotchets_positions =  crotchets_positions[np.where(crotchets_positions <= symbol.shape[0]//2)]
+
+	return {"label": label, "centers": crotchets_positions}
+	# lines_locs = lines[:,1]
+
+	# pitches = {
+	# 	"c": lines_locs[4] + diameter,			#c
+	# 	"d": lines_locs[4] + diameter//2,		#d
+	# 	"e": lines_locs[4],									#e
+	# 	"f": lines_locs[3] + diameter//2,		#f
+	# 	"g": lines_locs[3],									#g
+	# 	"a": lines_locs[2] + diameter//2,		#a
+	# 	"b": lines_locs[2],									#b
+	# 	"c2": lines_locs[1] + diameter//2,	#c2
+	# 	"d2": lines_locs[1],								#d2
+	# 	"f2": lines_locs[0] + diameter//2,	#f2
+	# 	"g2": lines_locs[0],								#g2
+	# 	"a2": lines_locs[0] - diameter//2,	#a2
+	# 	"b2": lines_locs[0] - diameter,			#b2
+	# }
+	
+	# symbols_pitches = []
+	# for crotchet_position in crotchets_positions:
+	# 	nearest_pitch_key = 'c'
+	# 	min_distance = float('inf')
+	# 	for pitch_key in pitches.keys():
+	# 		if(abs(pitches[pitch_key] - crotchet_position) < min_distance):
+	# 			nearest_pitch_key = pitch_key
+	# 			min_distance = abs(pitches[pitch_key] - crotchet_position)
+
+	# 	symbols_pitches.append(nearest_pitch_key)
+	
+	# return symbols_pitches
+		

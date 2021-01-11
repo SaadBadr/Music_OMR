@@ -238,25 +238,118 @@
 
 
 
-import cv2 as cv
-# test_img = (skeletonize(1 - symbols[1][13])*255).astype('uint8')
+# import cv2 as cv
+# # test_img = (skeletonize(1 - symbols[1][13])*255).astype('uint8')
 
-# out = test_img.copy()
-test_img = (skeletonize((1 - symbols[0][4]))*255).astype('uint8')
+# # out = test_img.copy()
+# test_img = (skeletonize((1 - symbols[0][4]))*255).astype('uint8')
 
-coords = corner_peaks(corner_harris(test_img), min_distance=2, threshold_rel=0.02)
-coords_subpix = corner_subpix(test_img, coords, window_size=13)
+# coords = corner_peaks(corner_harris(test_img), min_distance=2, threshold_rel=0.02)
+# coords_subpix = corner_subpix(test_img, coords, window_size=13)
 
-fig, ax = plt.subplots()
-ax.imshow(test_img, cmap=plt.cm.gray)
-ax.plot(coords[:, 1], coords[:, 0], color='cyan', marker='o',
-        linestyle='None', markersize=6)
-ax.plot(coords_subpix[:, 1], coords_subpix[:, 0], '+r', markersize=15)
-ax.axis((0, 310, 200, 0))
-plt.show()
+# fig, ax = plt.subplots()
+# ax.imshow(test_img, cmap=plt.cm.gray)
+# ax.plot(coords[:, 1], coords[:, 0], color='cyan', marker='o',
+#         linestyle='None', markersize=6)
+# ax.plot(coords_subpix[:, 1], coords_subpix[:, 0], '+r', markersize=15)
+# ax.axis((0, 310, 200, 0))
+# plt.show()
 
 
-# sift = cv.SIFT_create(contrastThreshold=0.09, edgeThreshold=3, sigma=1.6)
-# kp, des = sift.detectAndCompute(test_img,None)
-# test_img=cv.drawKeypoints(test_img,kp,out)
-show_images([test_img])
+# # sift = cv.SIFT_create(contrastThreshold=0.09, edgeThreshold=3, sigma=1.6)
+# # kp, des = sift.detectAndCompute(test_img,None)
+# # test_img=cv.drawKeypoints(test_img,kp,out)
+# show_images([test_img])
+
+
+
+
+
+
+################################## TEST CELL 4 ################################
+
+# from scipy.ndimage.morphology import binary_fill_holes
+# # calc_symbol_position(symbols_no_staff_lines[0][4], "a_2", rows_lines[0][0])
+# f = np.array([
+#     [0,0,0],
+#     [1,1,1],
+#     [0,0,0],
+# ])
+# symbol_cpy = symbols_no_staff_lines[0][4].copy()
+# itr = 7
+# for i in range(itr):
+#     symbol_cpy = binary_dilation(symbol_cpy, selem=f)
+
+# show_images([symbol_cpy], ["symbol after morphology"])
+# symbol_cpy = binary_fill_holes(symbol_cpy)
+# itr = 9
+# for i in range(itr):
+#     symbol_cpy = binary_erosion(symbol_cpy, selem=f)
+
+
+
+# show_images([symbol_cpy], ["symbol after morphology"])
+
+# lines = rows_lines[0][0]
+# diameter = int(get_avg_line_spacing(lines))
+# x, y = get_circles(symbol_cpy, diameter, 1)
+
+# min_distance_to_center = float('inf')
+# for i, X in enumerate(x):
+#     if(abs(X-symbol_cpy.shape[1]//2) < min_distance_to_center):
+#         center_x = X
+#         center_y = y[i]
+#         min_distance_to_center = abs(X-symbol_cpy.shape[1]//2)
+
+# fig, axs = plt.subplots(1, 1, figsize=(20,3))
+# axs.imshow(symbol_cpy)
+# axs.plot(center_x, center_y, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
+# plt.show()
+
+
+
+################################## TEST CELL 5 ################################
+
+# def check_if_beam_is_on_top(symbol):
+# 	topCount = 0
+# 	bottomCount = 0
+# 	for col in range(symbol.shape[1]):
+# 		row = 0
+# 		while(row < symbol.shape[0]//2):
+# 			if(symbol[row, col] == 1):
+# 				topCount+=1
+# 				break
+# 			row+=1
+
+# 		row = symbol.shape[0]-1
+# 		while(row > symbol.shape[0]//2):
+# 			if(symbol[row, col] == 1):
+# 				bottomCount+=1
+# 				break
+# 			row-=1
+# 	return topCount > bottomCount
+
+# symbol_cpy = symbols_no_staff_lines[1][4].copy()
+# lines = rows_lines[1][0]
+# diameter = int(get_avg_line_spacing(lines))
+# x, y = get_circles(symbol_cpy, diameter, 1)
+# b = check_if_beam_is_on_top(symbol_cpy)
+# newX = []
+# newY = []
+# if(b): #beam is on top
+#     for i,Y in enumerate(y):
+#         if(Y >= symbol_cpy.shape[0]//2):
+#             newX.append(x[i])
+#             newY.append(Y)
+# else: #beam is at bottom
+#     for i,Y in enumerate(y):
+#         if(Y <= symbol_cpy.shape[0]//2):
+#             newX.append(x[i])
+#             newY.append(Y)
+# newX = np.array(newX)
+# newY = np.array(newY)
+
+# fig, axs = plt.subplots(1, 1, figsize=(20,3))
+# axs.imshow(symbol_cpy)
+# axs.plot(newX, newY, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
+# plt.show()
