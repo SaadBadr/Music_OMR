@@ -42,9 +42,11 @@ def program(in_file, out_file):
 	thresh = threshold_otsu(binary_image)       # Works well with scanned image (High quality images)
 
 	binary_image = binary_image < thresh
+	# binary_image = binary_image.astype('float64')
 	# binary_image = binary_fill_holes(binary_image)
+	# show_images([gray_image, binary_image], ["Original (gray_image)", "Binarized image"])
 
-	show_images([gray_image, binary_image], ["Original (gray_image)", "Binarized image"])
+
 	# fig, ax = try_all_threshold(gray_image, figsize=(10, 6), verbose=False)
 
 
@@ -88,6 +90,10 @@ def program(in_file, out_file):
 		row_img, rotation_angle = adjust_orientation(row_img)
 		row_img = np.round(row_img).astype(int)
 
+		# draw_lines_on_image(row_img, reduce_lines_to_5(detect_lines(row_img)))
+
+
+
 		###############################START SPLITTING ROW IN 2 HALVES################################
 
 		row_img, original_row = truncate_left_and_right_empty_spaces(row_img, original_row)
@@ -126,11 +132,13 @@ def program(in_file, out_file):
 		first_half_symbols_original, first_half_symbols_no_staff_lines, first_half_lines = segment_symbols(img_row_first_half, original_row_first_half, True)
 		second_half_symbols_original, second_half_symbols_no_staff_lines, second_half_lines = segment_symbols(img_row_second_half, original_row_second_half, True)
 
-		show_images([row_img])
+		
 		if(len(first_half_lines) < 5):
 			first_half_lines = reduce_lines_to_5(detect_lines(row_img))
+
 		if(len(second_half_lines) < 5):
 			second_half_lines = reduce_lines_to_5(detect_lines(row_img))
+			
 
 
 		symbols_in_row_original = first_half_symbols_original
@@ -244,4 +252,4 @@ def program(in_file, out_file):
 
 
 
-program('test.png', './abc')
+program('test4.png', './abc')

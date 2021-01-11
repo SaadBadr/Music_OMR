@@ -61,7 +61,11 @@ def line_sort_key(line):
 def detect_lines(img):
 
 	# skeletonized_image = skeletonize(img)
+	# skeletonized_image = canny(img)
+
 	skeletonized_image = img
+
+
 
 	tested_angles = np.linspace(-np.pi / 2, np.pi / 2, 360)
 	h, theta, d = hough_line(skeletonized_image, theta=tested_angles)
@@ -70,7 +74,8 @@ def detect_lines(img):
 	# axes.imshow(skeletonized_image, cmap=cm.gray)
 
 	origin = np.array((0, skeletonized_image.shape[1]-1))
-	peaks = zip(*hough_line_peaks(h, theta, d, threshold=0.25*np.max(h)))
+	peaks = zip(*hough_line_peaks(h, theta, d, threshold=0.3*np.max(h)))
+	
 
 	linesArr = []
 	for _, angle, dist in peaks:
@@ -85,6 +90,7 @@ def detect_lines(img):
 					origin[1] = dist
 			point0 = [origin[0], y0]
 			point1 = [origin[1], y1]
+			# print(y0, y1)
 			if(len([index for index,value in enumerate(linesArr) \
 					if \
 							( abs(value[0][1] - y0) < 5 and abs(value[1][1] - y1) < 5 ) \
@@ -117,7 +123,6 @@ def reduce_lines_to_5(lines):
 	for i in range(1, len(Ys)):
 			avg_spacing += Ys[i] - Ys[i-1]
 	avg_spacing /= (len(Ys) - 1)
-	print(avg_spacing)
 	reduced_lines = []
 	reduced_lines.append(lines[0])
 	for i in range(1, len(lines)):
@@ -137,6 +142,8 @@ def get_avg_lines_heights(linesArr):
 
 
 def get_avg_line_spacing(linesArr):
+	if(len(linesArr) == 1):
+		raise Exception('division by zero @ get avg line spacing')
 	mean_diff = 0
 	for i in range(len(linesArr)-1):
 			avgY0 = (linesArr[i][0][1] + linesArr[i][1][1]) / 2
@@ -490,11 +497,10 @@ def segment_image_into_rows(binary_image, original_image):
 
 	## Detect staff lines as a preparation step for stave segmentation.
 	##------------------------------------------------------------------
-
 	linesArr = detect_lines(binary_image)
 	# if the number of lines detected is less than or equal to 5 then the 
 	# img contains only one stave/row.
-	if(len(linesArr) <= 5):
+	if(len(linesArr) <= 8):
 		return [binary_image], [original_image], [0, binary_image.shape[0]-1]
 
 

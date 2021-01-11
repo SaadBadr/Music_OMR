@@ -102,7 +102,11 @@ def get_output(rows, staff_lines, avg_spacing, out_path, img_name):
                         notes_to_write = sorted(notes_to_write) 
 
                     for index, note in enumerate(notes_to_write):
-                        f.write(note)
+                        if accidental != '' and not (accidental in ['.', '..']):
+                            f.write(note[0]+accidental+note[1])
+                            accidental = ''
+                        else:
+                            f.write(note)
                         if (index != (len(notes_to_write)-1) and symbol['label'] == 'chord'):
                             f.write(', ')
                     
