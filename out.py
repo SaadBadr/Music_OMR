@@ -12,18 +12,17 @@ def get_output(rows, staff_lines, avg_spacing, out_path, img_name):
         'b_16': '/16', 
         'b_32': '/32'
     }
-    ignored = ['barline', 'clef']
+    ignored = ['barline', 'clef', 'natural']
     accidentals = {
         'dot':'.',
         'double_flat': '&&',
         'double_sharp': '##',
         'flat': '&',
-        'natural': '',
         'sharp': '#',
     }
     meters = {
-        "t_4_2": "4\\2", 
-        "t_4_4": "4\\4"
+        "t_4_2": "4/2", 
+        "t_4_4": "4/4"
     }
     img_name = img_name.split('.')[0]
     # neglecting image extension
@@ -93,31 +92,36 @@ def get_output(rows, staff_lines, avg_spacing, out_path, img_name):
                         if accidental != '':
                             notes_to_write.append(note)
                         else:
-                            notes_to_write.append(note + ' ')
+                            notes_to_write.append(note)
                     
                     if(symbol['label'] == 'chord'):
                         f.write('{')
 
                         # to stick to the alphabetical order
                         notes_to_write = sorted(notes_to_write) 
-
+                    
                     for index, note in enumerate(notes_to_write):
                         if accidental != '' and not (accidental in ['.', '..']):
                             f.write(note[0]+accidental+note[1])
+                            accidental = ''
+                        elif accidental != '':
+                            f.write(note+accidental)
                             accidental = ''
                         else:
                             f.write(note)
                         if (index != (len(notes_to_write)-1) and symbol['label'] == 'chord'):
                             f.write(', ')
+                        else:
+                            f.write(' ')
                     
                     if(symbol['label'] == 'chord'):
-                        f.write('}')
-
+                        f.write(accidental)
+                        accidental = ''
+                        f.write('} ')
                 # check if there was an accidental 
                 if accidental != '':
-                    f.write(accidental + ' ')
+                    f.write(accidental)
                     accidental = ''
-
             # check if it's the last row
             if((k%2==1)):
                 if k != (len(rows) - 1):
@@ -228,4 +232,5 @@ def get_output(rows, staff_lines, avg_spacing, out_path, img_name):
 #     ]
 # ]
 # get_output(to_check, staff, 5, '/home/francois/Desktop', 'test.jpg')
+
 

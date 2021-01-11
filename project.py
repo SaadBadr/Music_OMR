@@ -252,4 +252,4 @@ def program(in_file, out_file):
 
 
 
-program('test4.png', './abc')
+program('test.png', './abc')
