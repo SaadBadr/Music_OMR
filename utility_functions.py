@@ -567,7 +567,7 @@ def segment_image_into_rows(binary_image, original_image):
 		row = original_image[start_loc:end_loc, :]
 		row_images_original.append(row)
 
-	return np.array(row_images), np.array(row_images_original), seg_locs
+	return np.array(row_images, dtype=object), np.array(row_images_original, dtype=object), seg_locs
 
 
 

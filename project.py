@@ -230,17 +230,18 @@ def program(in_file, out_file):
 ########################################################################################################################################
 
 ##----MAIN----##
-path_to_test_cases = os.path.normpath('./test-set-scanned/test-cases')
-path_to_output = os.path.normpath("./abc")
+def main_program(in_directory, out_directory):
+	path_to_test_cases = os.path.normpath(in_directory) # './test-set-scanned/test-cases'
+	path_to_output = os.path.normpath(out_directory) 		# './abc'
 
-for fn in os.listdir(path_to_test_cases):
-	try:
-		path = os.path.join(path_to_test_cases, fn)
-		path = os.path.normpath(path)
-		program(path, path_to_output)
-	except:
-		print("Oops!", sys.exc_info()[0], "occurred.")
-		print("Next entry.")
+	for fn in os.listdir(path_to_test_cases):
+		try:
+			path = os.path.join(path_to_test_cases, fn)
+			path = os.path.normpath(path)
+			program(path, path_to_output)
+		except:
+			print("Oops!", sys.exc_info()[0], "occurred.")
+			print("Next entry.")
 	
 	
 
