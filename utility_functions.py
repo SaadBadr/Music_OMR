@@ -252,7 +252,9 @@ def get_circles(img, diameter, thresh):
 	result = convolve2d(np.uint8(img_cpy), selem, mode='same')  + convolve2d(np.uint8(1-img_cpy), 1-selem, mode='same')
 	# print(np.max(result), (selem.shape[0] * selem.shape[1]), diameter)
 	# result = result / (selem.shape[0] * selem.shape[1])
-	result = result / np.max(result)
+	
+	if(np.max(result) > 0):
+		result = result / np.max(result)
 
 	ij = np.where(result >= thresh)
 	x, y = ij[::-1]

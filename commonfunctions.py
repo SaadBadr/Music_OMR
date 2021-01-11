@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.exposure import histogram
 from matplotlib.pyplot import bar, barh
-from skimage.color import rgb2gray,rgb2hsv
+from skimage.color import rgb2gray, rgba2rgb, rgb2hsv
 
 # Convolution:
 from scipy.signal import convolve2d

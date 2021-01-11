@@ -353,3 +353,27 @@
 # axs.imshow(symbol_cpy)
 # axs.plot(newX, newY, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
 # plt.show()
+
+
+
+############################# TEST CELL 6 ###########################
+    # In[5]:
+
+
+	# for i, row in enumerate(symbols_no_staff_lines):
+	# 	first_half_avg_spacing =  int(get_avg_line_spacing(rows_lines[i][0]))
+	# 	second_half_avg_spacing =  int(get_avg_line_spacing(rows_lines[i][1]))
+
+	# 	# fig, axs = plt.subplots(1, len(row)+1, figsize=(20,3))
+	# 	for j, symbol in enumerate(row):
+	# 		diameter = first_half_avg_spacing if j < second_halves_indexes[i] else second_half_avg_spacing
+	# 		xArr, yArr = get_circles(symbol, diameter, 1)
+	# 		# axs[j].imshow(symbol)
+	# 		# axs[j].plot(xArr, yArr, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
+
+	# 		selem = np.ones((diameter+1, diameter+1), dtype=np.uint8)
+	# 		rr, cc = disk((diameter//2, diameter//2), diameter//2)
+	# 		selem[rr,cc] = 1
+	# 		# print(selem)
+	# 		# axs[-1].imshow(selem)
+	# 		# plt.show()

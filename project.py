@@ -18,6 +18,8 @@ from scipy.signal import convolve2d
 from scipy.ndimage.morphology import binary_fill_holes
 from out import *
 from classify import classify
+import os
+import sys
 
 # In[2]:
 
@@ -32,7 +34,14 @@ def program(in_file, out_file):
 
 	# 'test-set-camera-captured/test-cases/22.jpg'
 	# 'test-set-scanned/test-cases/02.PNG'
-	gray_image = rgb2gray(imread(in_file))
+	read_image = imread(in_file)
+	if(len(read_image.shape) == 2):
+		gray_image = read_image
+	elif(read_image.shape[2] == 3):
+		gray_image = rgb2gray(read_image)
+	elif(read_image.shape[2] == 4):
+		gray_image = rgb2gray(rgba2rgb(read_image))
+
 	binary_image = gray_image
 	# thresh = threshold_niblack(binary_image, 55, k=0.8)
 	# thresh = threshold_local(binary_image, block_size=205)  # block_size must be odd
@@ -158,46 +167,9 @@ def program(in_file, out_file):
 
 		rows_lines.append([first_half_lines, second_half_lines])
 
-		
-		#########################END SPLITTING ROW IN 2 HALVES#################################
-
-
-		# original_row = transform.rotate(original_row, rotation_angle, resize=False, clip=False, cval=0)
-		# original_row= np.round(original_row).astype(int)
-
-		# symbols.append(segment_symbols(row_img, original_row))
-		# fig, axs = plt.subplots(1, len(symbols[i]), figsize=(20,3))
-		# for i, symbol in enumerate(symbols[i]):
-		#     axs[i].imshow(symbol)
-		#     axs[i].set_xticks([]) 
-		#     axs[i].set_yticks([]) 
-		# plt.show()
 
 
     # In[5]:
-
-
-	for i, row in enumerate(symbols_no_staff_lines):
-		first_half_avg_spacing =  int(get_avg_line_spacing(rows_lines[i][0]))
-		second_half_avg_spacing =  int(get_avg_line_spacing(rows_lines[i][1]))
-
-		# fig, axs = plt.subplots(1, len(row)+1, figsize=(20,3))
-		for j, symbol in enumerate(row):
-			diameter = first_half_avg_spacing if j < second_halves_indexes[i] else second_half_avg_spacing
-			xArr, yArr = get_circles(symbol, diameter, 1)
-			# axs[j].imshow(symbol)
-			# axs[j].plot(xArr, yArr, 'o', markeredgecolor='r', markerfacecolor='none', markersize=10)
-
-			selem = np.ones((diameter+1, diameter+1), dtype=np.uint8)
-			rr, cc = disk((diameter//2, diameter//2), diameter//2)
-			selem[rr,cc] = 1
-			# print(selem)
-			# axs[-1].imshow(selem)
-			# plt.show()
-
-
-    # In[6]:
-
 
 	labeled_symbols = classify(symbols_no_staff_lines)
 
@@ -246,10 +218,30 @@ def program(in_file, out_file):
 
 	
 	# print(len(classified_symbols_with_positions_all_img))
+	if(in_file.find("/") != -1):
+		img_name = in_file.split('/')[-1]
+	else: # if the os is using '/' split using 
+		img_name = in_file.split('\\')[-1]
+	get_output(classified_symbols_with_positions_all_img, pitches, diameter, out_file, img_name)
 
-	get_output(classified_symbols_with_positions_all_img, pitches, diameter, out_file, in_file)
 
+########################################################################################################################################
+########################################################################################################################################
+########################################################################################################################################
 
+##----MAIN----##
+path_to_test_cases = os.path.normpath('./test-set-scanned/test-cases')
+path_to_output = os.path.normpath("./abc")
 
+for fn in os.listdir(path_to_test_cases):
+	try:
+		path = os.path.join(path_to_test_cases, fn)
+		path = os.path.normpath(path)
+		program(path, path_to_output)
+	except:
+		print("Oops!", sys.exc_info()[0], "occurred.")
+		print("Next entry.")
+	
+	
 
-program('test4.png', './abc')
+	
